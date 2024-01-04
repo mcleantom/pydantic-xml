@@ -319,7 +319,13 @@ class ModelProxySerializer(BaseModelSerializer):
         search_mode = ctx.search_mode
         computed = ctx.field_computed
         nillable = ctx.nillable
-        serializer = ModelSerializer.from_core_schema(schema, ctx)
+        try:
+            if schema['schema']['type'] == 'model-fields':
+                serializer = ModelSerializer.from_core_schema(schema, ctx)
+            else:
+                serializer = RootModelSerializer.from_core_schema(schema, ctx)
+        except Exception as e:
+            raise e
         return cls(model_cls, name, ns, nsmap, search_mode, computed, nillable, serializer)
 
     def __init__(

@@ -387,6 +387,29 @@ def test_submodel_namespaces_default_namespace_inheritance():
     assert_xml_equal(actual_xml, xml)
 
 
+def test_nested_namespace():
+
+    class TestSubSubModel(BaseXmlModel, tag="subsubmodel"):
+        attr1: int = attr()
+        attr2: int = attr()
+
+    class TestSubModel(BaseXmlModel, tag="submodel"):
+        subsubmodel: TestSubSubModel = element()
+
+    class TestModel(BaseXmlModel, tag="model", nsmap={"": "http://test1.org"}):
+        submodel: TestSubModel = element()
+
+
+    expected_obj = TestModel(
+        submodel=TestSubModel(
+            subsubmodel=TestSubSubModel(attr1=1, attr2=2)
+        )
+    )
+    actual_obj = TestModel.from_xml(expected_obj.to_xml())
+
+    assert actual_obj == expected_obj
+
+
 def test_model_proxy_namspace():
     class TestSubSubModel(BaseXmlModel, tag="subsubmodel"):
         attr1: int = attr()
