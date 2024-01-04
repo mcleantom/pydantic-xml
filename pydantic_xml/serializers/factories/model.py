@@ -319,8 +319,8 @@ class ModelProxySerializer(BaseModelSerializer):
         search_mode = ctx.search_mode
         computed = ctx.field_computed
         nillable = ctx.nillable
-
-        return cls(model_cls, name, ns, nsmap, search_mode, computed, nillable)
+        serializer = ModelSerializer.from_core_schema(schema, ctx)
+        return cls(model_cls, name, ns, nsmap, search_mode, computed, nillable, serializer)
 
     def __init__(
             self,
@@ -331,6 +331,7 @@ class ModelProxySerializer(BaseModelSerializer):
             search_mode: SearchMode,
             computed: bool,
             nillable: bool,
+            serializer: ModelSerializer,
     ):
         self._model = model
         self._element_name = QName.from_alias(tag=name, ns=ns, nsmap=nsmap).uri
@@ -338,6 +339,7 @@ class ModelProxySerializer(BaseModelSerializer):
         self._search_mode = search_mode
         self._computed = computed
         self._nillable = nillable
+        self._serializer = serializer
 
     @property
     def model(self) -> Type['pxml.BaseXmlModel']:
@@ -403,7 +405,7 @@ class ModelProxySerializer(BaseModelSerializer):
             if is_element_nill(sub_element):
                 return None
             else:
-                return self._model.__xml_serializer__.deserialize(
+                return self._serializer.deserialize(
                     sub_element, context=context, sourcemap=sourcemap, loc=loc,
                 )
         else:
