@@ -8,7 +8,7 @@ from pydantic_xml import errors
 from pydantic_xml.element import XmlElementReader, XmlElementWriter
 from pydantic_xml.serializers.factories.model import ModelProxySerializer
 from pydantic_xml.serializers.serializer import TYPE_FAMILY, SchemaTypeFamily, Serializer
-from pydantic_xml.typedefs import Location
+from pydantic_xml.typedefs import Location, NsMap
 
 
 class PrimitiveTypeSerializer(Serializer):
@@ -46,11 +46,12 @@ class PrimitiveTypeSerializer(Serializer):
             context: Optional[Dict[str, Any]],
             sourcemap: Dict[Location, int],
             loc: Location,
+            nsmap: NsMap
     ) -> Optional[str]:
         if self._computed:
             return None
 
-        return self._inner_serializer.deserialize(element, context=context, sourcemap=sourcemap, loc=loc)
+        return self._inner_serializer.deserialize(element, context=context, sourcemap=sourcemap, loc=loc, nsmap=nsmap)
 
 
 class ModelSerializer(Serializer):
@@ -96,6 +97,7 @@ class ModelSerializer(Serializer):
             context: Optional[Dict[str, Any]],
             sourcemap: Dict[Location, int],
             loc: Location,
+            nsmap: NsMap
     ) -> Optional['pxml.BaseXmlModel']:
         if self._computed:
             return None
@@ -108,7 +110,7 @@ class ModelSerializer(Serializer):
         for serializer in self._inner_serializers:
             snapshot = element.create_snapshot()
             try:
-                if (result := serializer.deserialize(snapshot, context=context, sourcemap=sourcemap, loc=loc)) is None:
+                if (result := serializer.deserialize(snapshot, context=context, sourcemap=sourcemap, loc=loc, nsmap=nsmap)) is None:
                     continue
                 else:
                     element.apply_snapshot(snapshot)

@@ -346,6 +346,7 @@ class BaseXmlModel(BaseModel, __xml_abstract__=True, metaclass=XmlModelMeta):
                     context=context,
                     sourcemap={},
                     loc=(),
+                    nsmap=cls.__xml_serializer__.nsmap,
                 ),
             )
             return obj

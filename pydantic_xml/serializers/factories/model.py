@@ -50,6 +50,10 @@ class BaseModelSerializer(Serializer, abc.ABC):
         if line_errors:
             raise pd.ValidationError.from_exception_data(title=error_title, line_errors=line_errors)
 
+    @staticmethod
+    def get_element_name(tag: str, nsmap: NsMap) -> str:
+        return QName.from_alias(tag=tag, ns=None, nsmap=nsmap).uri
+
 
 class ModelSerializer(BaseModelSerializer):
     @classmethod
@@ -180,6 +184,7 @@ class ModelSerializer(BaseModelSerializer):
             context: Optional[Dict[str, Any]],
             sourcemap: Dict[Location, int],
             loc: Location,
+            nsmap: NsMap
     ) -> Optional['pxml.BaseXmlModel']:
         if element is None:
             return None
@@ -190,7 +195,7 @@ class ModelSerializer(BaseModelSerializer):
             try:
                 loc = (field_name,)
                 sourcemap[loc] = element.get_sourceline()
-                field_value = field_serializer.deserialize(element, context=context, sourcemap=sourcemap, loc=loc)
+                field_value = field_serializer.deserialize(element, context=context, sourcemap=sourcemap, loc=loc, nsmap=nsmap)
                 if field_value is not None:
                     field_name = self._fields_validation_aliases.get(field_name, field_name)
                     result[field_name] = field_value
@@ -287,12 +292,13 @@ class RootModelSerializer(BaseModelSerializer):
             context: Optional[Dict[str, Any]],
             sourcemap: Dict[Location, int],
             loc: Location,
+            nsmap: NsMap
     ) -> Optional['pxml.BaseXmlModel']:
         if element is None:
             return None
 
         try:
-            result = self._root_serializer.deserialize(element, context=context, sourcemap=sourcemap, loc=loc)
+            result = self._root_serializer.deserialize(element, context=context, sourcemap=sourcemap, loc=loc, nsmap=nsmap)
             if result is None:
                 result = pdc.PydanticUndefined
         except pd.ValidationError as err:
@@ -319,7 +325,6 @@ class ModelProxySerializer(BaseModelSerializer):
         search_mode = ctx.search_mode
         computed = ctx.field_computed
         nillable = ctx.nillable
-
         return cls(model_cls, name, ns, nsmap, search_mode, computed, nillable)
 
     def __init__(
@@ -333,6 +338,8 @@ class ModelProxySerializer(BaseModelSerializer):
             nillable: bool,
     ):
         self._model = model
+        self._tag = name
+        self._ns = ns
         self._element_name = QName.from_alias(tag=name, ns=ns, nsmap=nsmap).uri
         self._nsmap = nsmap
         self._search_mode = search_mode
@@ -389,6 +396,7 @@ class ModelProxySerializer(BaseModelSerializer):
             context: Optional[Dict[str, Any]],
             sourcemap: Dict[Location, int],
             loc: Location,
+            nsmap: NsMap  # <-- New parameter
     ) -> Optional['pxml.BaseXmlModel']:
         assert self._model.__xml_serializer__ is not None, f"model {self._model.__name__} is partially initialized"
 
@@ -398,13 +406,13 @@ class ModelProxySerializer(BaseModelSerializer):
         if element is None:
             return None
 
-        if (sub_element := element.pop_element(self._element_name, self._search_mode)) is not None:
+        if (sub_element := element.pop_element(self.get_element_name(self._tag, nsmap), self._search_mode)) is not None:
             sourcemap[loc] = sub_element.get_sourceline()
             if is_element_nill(sub_element):
                 return None
             else:
                 return self._model.__xml_serializer__.deserialize(
-                    sub_element, context=context, sourcemap=sourcemap, loc=loc,
+                    sub_element, context=context, sourcemap=sourcemap, loc=loc, nsmap=nsmap
                 )
         else:
             return None

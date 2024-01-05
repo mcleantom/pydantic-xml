@@ -49,6 +49,7 @@ class ElementSerializer(Serializer):
             context: Optional[Dict[str, Any]],
             sourcemap: Dict[Location, int],
             loc: Location,
+            nsmap: NsMap
     ) -> Optional[str]:
         if self._computed:
             return None

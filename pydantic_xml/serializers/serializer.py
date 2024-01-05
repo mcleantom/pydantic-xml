@@ -291,6 +291,7 @@ class Serializer(abc.ABC):
             context: Optional[Dict[str, Any]],
             sourcemap: Dict[Location, int],
             loc: Location,
+            nsmap: NsMap
     ) -> Optional[Any]:
         """
         Deserializes a value from the xml element.

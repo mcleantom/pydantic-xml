@@ -59,6 +59,7 @@ class TextSerializer(Serializer):
             context: Optional[Dict[str, Any]],
             sourcemap: Dict[Location, int],
             loc: Location,
+            nsmap: NsMap
     ) -> Optional[str]:
         if self._computed:
             return None
@@ -117,6 +118,7 @@ class AttributeSerializer(Serializer):
             context: Optional[Dict[str, Any]],
             sourcemap: Dict[Location, int],
             loc: Location,
+            nsmap: NsMap
     ) -> Optional[str]:
         if self._computed:
             return None
@@ -178,6 +180,7 @@ class ElementSerializer(TextSerializer):
             context: Optional[Dict[str, Any]],
             sourcemap: Dict[Location, int],
             loc: Location,
+            nsmap: NsMap
     ) -> Optional[str]:
         if self._computed:
             return None
@@ -187,7 +190,7 @@ class ElementSerializer(TextSerializer):
 
         if (sub_element := element.pop_element(self._element_name, self._search_mode)) is not None:
             sourcemap[loc] = sub_element.get_sourceline()
-            return super().deserialize(sub_element, context=context, sourcemap=sourcemap, loc=loc)
+            return super().deserialize(sub_element, context=context, sourcemap=sourcemap, loc=loc, nsmap=nsmap)
         else:
             return None
 
