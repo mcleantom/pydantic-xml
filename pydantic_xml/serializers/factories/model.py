@@ -396,7 +396,7 @@ class ModelProxySerializer(BaseModelSerializer):
             context: Optional[Dict[str, Any]],
             sourcemap: Dict[Location, int],
             loc: Location,
-            nsmap: NsMap  # <-- New parameter
+            nsmap: NsMap
     ) -> Optional['pxml.BaseXmlModel']:
         assert self._model.__xml_serializer__ is not None, f"model {self._model.__name__} is partially initialized"
 
@@ -406,7 +406,12 @@ class ModelProxySerializer(BaseModelSerializer):
         if element is None:
             return None
 
-        if (sub_element := element.pop_element(self.get_element_name(self._tag, nsmap), self._search_mode)) is not None:
+        sub_element = element.pop_element(self._element_name, self._search_mode)
+
+        if sub_element is None:
+            sub_element = element.pop_element(self.get_element_name(self._tag, nsmap), self._search_mode)
+
+        if sub_element is not None:
             sourcemap[loc] = sub_element.get_sourceline()
             if is_element_nill(sub_element):
                 return None

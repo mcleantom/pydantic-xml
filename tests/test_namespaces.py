@@ -389,9 +389,14 @@ def test_submodel_namespaces_default_namespace_inheritance():
 
 def test_deeply_nested_model_list():
 
+    class TestSubSubSubModel(BaseXmlModel, tag="subsubsubmodel"):
+        attr1: int = attr()
+        attr2: int = attr()
+
     class TestSubSubModel(BaseXmlModel, tag="subsubmodel"):
         attr1: int = attr()
         attr2: int = attr()
+        subsubsubmodels: list[TestSubSubSubModel] = element(default_factory=list)
 
     class TestSubModel(BaseXmlModel, tag="submodel"):
         subsubmodels: list[TestSubSubModel] = element(default_factory=list)
@@ -403,24 +408,30 @@ def test_deeply_nested_model_list():
     ):
         submodels: TestSubModel = element()
 
-    xml = """
-    <model xmlns="http://test1.org">
-        <submodel>
-            <subsubmodel attr1="1" attr2="2"/>
-            <subsubmodel attr1="3" attr2="4"/>
-        </submodel>
-    </model>
-    """
 
     expected_obj = TestModel(
         submodels=TestSubModel(
             subsubmodels=[
-                TestSubSubModel(attr1=1, attr2=2),
-                TestSubSubModel(attr1=3, attr2=4),
+                TestSubSubModel(
+                    attr1=1,
+                    attr2=2,
+                    subsubsubmodels=[
+                        TestSubSubSubModel(attr1=1, attr2=2),
+                        TestSubSubSubModel(attr1=3, attr2=4),
+                    ],
+                ),
+                TestSubSubModel(
+                    attr1=3,
+                    attr2=4,
+                    subsubsubmodels=[
+                        TestSubSubSubModel(attr1=5, attr2=6),
+                        TestSubSubSubModel(attr1=7, attr2=8),
+                    ],
+                ),
             ]
         )
     )
 
-    actual_obj = TestModel.from_xml(xml)
+    actual_obj = TestModel.from_xml(expected_obj.to_xml())
 
     assert actual_obj == expected_obj
